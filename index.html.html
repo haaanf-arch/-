@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام استفسارات أولياء الأمور</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,sans-serif}
+body{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px}
+.container{max-width:1300px;margin:0 auto;background:#fff;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
+.header{background:linear-gradient(135deg,#1e3c72,#2a5298);color:#fff;padding:30px;text-align:center}
+.header h1{font-size:2em;margin-bottom:10px}
+.header p{opacity:.9}
+.nav{display:flex;background:#f8f9fa;border-bottom:2px solid #e9ecef;flex-wrap:wrap}
+.nav button{flex:1;padding:14px 8px;border:none;background:transparent;cursor:pointer;font-size:14px;font-weight:600;color:#495057;transition:.3s;min-width:130px}
+.nav button:hover{background:#e9ecef}
+.nav button.active{background:#2a5298;color:#fff}
+.page{display:none;padding:30px;animation:fadeIn .4s}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.card{background:#fff;border:1px solid #e9ecef;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.card h2{color:#2a5298;margin-bottom:15px;border-bottom:2px solid #e9ecef;padding-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.form-group{margin-bottom:15px}
+.form-group label{display:block;margin-bottom:6px;font-weight:600;color:#495057}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 12px;border:2px solid #e9ecef;border-radius:8px;font-size:15px;transition:border .3s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:#2a5298}
+.form-group textarea{resize:vertical;min-height:80px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.btn{padding:12px 24px;border:none;border-radius:8px;cursor:pointer;font-size:15px;font-weight:600;transition:.3s;margin:3px}
+.btn-primary{background:#2a5298;color:#fff}
+.btn-primary:hover{background:#1e3c72}
+.btn-success{background:#28a745;color:#fff}
+.btn-success:hover{background:#218838}
+.btn-danger{background:#dc3545;color:#fff;padding:6px 12px;font-size:13px}
+.btn-danger-lg{background:#dc3545;color:#fff;padding:8px 16px;font-size:14px}
+.btn-danger-lg:hover{background:#c82333}
+.btn-warning{background:#ffc107;color:#000}
+.btn-info{background:#17a2b8;color:#fff}
+.btn-secondary{background:#6c757d;color:#fff}
+.btn-sm{padding:6px 12px;font-size:13px}
+table{width:100%;border-collapse:collapse;margin-top:15px}
+table th,table td{padding:12px;text-align:right;border-bottom:1px solid #e9ecef}
+table th{background:#f8f9fa;color:#2a5298;font-weight:700}
+table tr:hover{background:#f8f9fa}
+.badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600}
+.badge-pending{background:#fff3cd;color:#856404}
+.badge-partial{background:#ffe5d0;color:#a94400}
+.badge-done{background:#d4edda;color:#155724}
+.link-box{background:#f0f4ff;border:2px dashed #2a5298;padding:15px;border-radius:10px;margin:15px 0;word-break:break-all}
+.link-box a{color:#2a5298;font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px;margin-bottom:20px}
+.stat-card{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:20px;border-radius:12px;text-align:center}
+.stat-card .num{font-size:2.2em;font-weight:700}
+.stat-card .label{opacity:.9;margin-top:5px;font-size:14px}
+.alert{padding:12px 15px;border-radius:8px;margin-bottom:15px}
+.alert-success{background:#d4edda;color:#155724;border:1px solid #c3e6cb}
+.alert-info{background:#d1ecf1;color:#0c5460;border:1px solid #bee5eb}
+.alert-warning{background:#fff3cd;color:#856404;border:1px solid #ffe8a1}
+.tabs-sub{display:flex;gap:5px;margin-bottom:20px;border-bottom:2px solid #e9ecef;flex-wrap:wrap}
+.tabs-sub button{padding:10px 18px;background:transparent;border:none;cursor:pointer;font-weight:600;color:#6c757d;border-bottom:3px solid transparent}
+.tabs-sub button.active{color:#2a5298;border-bottom-color:#2a5298}
+.question-card{background:#f8f9fa;border-right:4px solid #2a5298;padding:15px;margin-bottom:10px;border-radius:8px}
+.question-card.behavioral{border-right-color:#e67e22}
+.question-card .q-text{font-weight:600;margin-bottom:8px;color:#2a5298}
+.question-card.behavioral .q-text{color:#e67e22}
+.question-card .q-options{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.question-card .q-option{background:#fff;border:1px solid #2a5298;color:#2a5298;padding:4px 10px;border-radius:15px;font-size:12px}
+.progress-bar{background:#e9ecef;height:10px;border-radius:5px;overflow:hidden;margin:10px 0}
+.progress-fill{height:100%;background:linear-gradient(90deg,#28a745,#20c997);transition:width .5s}
+.role-selector{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin:20px 0}
+.role-card{background:#f8f9fa;border:3px solid #e9ecef;padding:25px;border-radius:12px;text-align:center;cursor:pointer;transition:.3s}
+.role-card:hover{border-color:#2a5298;transform:translateY(-3px)}
+.role-card .icon{font-size:3em;margin-bottom:10px}
+.role-card .title{font-weight:700;color:#2a5298;font-size:1.1em}
+.role-card .scope{display:inline-block;margin-top:8px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600}
+.scope-all{background:#d4edda;color:#155724}
+.scope-beh{background:#ffe5d0;color:#a94400}
+.checklist{max-height:250px;overflow-y:auto;border:2px solid #e9ecef;border-radius:8px;padding:10px}
+.checklist-item{padding:8px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:10px}
+.checklist-item:last-child{border-bottom:none}
+.checklist-item input{width:18px;height:18px;cursor:pointer}
+.summary-section{background:#f8f9fa;padding:20px;border-radius:12px;margin-bottom:15px}
+.summary-section h3{color:#2a5298;margin-bottom:15px;border-bottom:2px solid #2a5298;padding-bottom:8px}
+.score-circle{display:inline-block;width:70px;height:70px;border-radius:50%;color:#fff;text-align:center;line-height:70px;font-weight:700;font-size:1.3em;margin:0 10px}
+.upload-zone{border:2px dashed #2a5298;border-radius:12px;padding:30px;text-align:center;background:#f0f4ff;cursor:pointer;transition:.3s}
+.upload-zone:hover{background:#e0e8ff}
+.upload-zone .icon{font-size:3em;color:#2a5298}
+.rating-options{display:flex;gap:8px;flex-wrap:wrap}
+.rating-options label{background:#fff;border:2px solid #e9ecef;padding:8px 14px;border-radius:20px;cursor:pointer;font-size:13px;transition:.2s}
+.rating-options input{display:none}
+.rating-options label:has(input:checked){background:#2a5298;color:#fff;border-color:#2a5298}
+.search-box{position:relative;margin-bottom:10px}
+.search-box input{padding-right:40px !important;background:#f8f9fa}
+.search-box .search-icon{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:18px;color:#6c757d}
+.search-results-count{font-size:12px;color:#6c757d;margin-top:4px}
+.eval-scope-badge{display:inline-block;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;margin-bottom:15px}
+.eval-scope-all{background:#d4edda;color:#155724}
+.eval-scope-beh{background:#ffe5d0;color:#a94400}
+.subject-card{background:linear-gradient(135deg,#f8f9fa,#e9ecef);border:2px solid #2a5298;border-radius:12px;padding:20px;margin-bottom:20px}
+.subject-card h3{color:#2a5298;margin-bottom:15px;display:flex;align-items:center;gap:10px}
+.subject-score{display:inline-block;padding:8px 16px;border-radius:20px;font-weight:700;font-size:1.1em}
+@media print{
+  body{background:#fff;padding:0}
+  .container{box-shadow:none;border-radius:0}
+  .no-print{display:none!important}
+  .header{background:#1e3c72!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .print-only{display:block!important}
+  .card{box-shadow:none;border:1px solid #ddd;page-break-inside:avoid}
+  .score-circle{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .subject-card{page-break-inside:avoid}
+}
+.print-only{display:none}
+@media(max-width:768px){
+  .nav button{min-width:100px;font-size:12px;padding:10px 5px}
+  .form-row{grid-template-columns:1fr}
+  .header h1{font-size:1.5em}
+  table{font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<div id="adminPanel" class="container">
+  <div class="header no-print">
+    <h1>🎓 نظام استفسارات أولياء الأمور</h1>
+    <p>منصة متكاملة لتقييم الطلاب من المعلمين والإدارة</p>
+  </div>
+
+  <div class="nav no-print">
+    <button class="active" onclick="showPage('dashboard',this)">🏠 الرئيسية</button>
+    <button onclick="showPage('students',this)">👨‍🎓 الطلاب</button>
+    <button onclick="showPage('teachers',this)">👨‍🏫 المعلمون</button>
+    <button onclick="showPage('questions',this)">❓ الأسئلة</button>
+    <button onclick="showPage('newInquiry',this)">➕ استفسار جديد</button>
+    <button onclick="showPage('inquiries',this)">📋 الاستفسارات</button>
+    <button onclick="showPage('summary',this)">📊 الملخص</button>
+  </div>
+
+  <div id="dashboard" class="page active">
+    <div class="stats" id="statsContainer"></div>
+    <div class="card">
+      <h2>مرحباً بك في النظام</h2>
+      <p><strong>خطوات العمل:</strong></p>
+      <ol style="margin-top:15px;line-height:2.2;padding-right:20px">
+        <li>📥 استيراد بيانات الطلاب والمعلمين من Excel أو إضافتها يدوياً</li>
+        <li>❓ تخصيص أسئلة التقييم مع خيارات محددة</li>
+        <li>➕ إنشاء استفسار جديد واختيار المعلمين مع موادهم</li>
+        <li>🔗 مشاركة الرابط الموحد مع جميع الأطراف</li>
+        <li>✍️ <strong>المعلم:</strong> يقيّم المحور الدراسي + السلوكي (لكل مادة)</li>
+        <li>✍️ <strong>وكيل شؤون الطلاب والموجه:</strong> يقيّمان المحور السلوكي فقط</li>
+        <li>📊 عرض ملخص نهائي: تقييم كل مادة + التقييم الإجمالي</li>
+      </ol>
+    </div>
+  </div>
+
+  <div id="students" class="page">
+    <div class="tabs-sub">
+      <button class="active" onclick="showSubTab('students','manual',this)">✍️ إضافة يدوية</button>
+      <button onclick="showSubTab('students','excel',this)">📥 استيراد Excel</button>
+    </div>
+    <div id="students-manual" class="sub-page">
+      <div class="card">
+        <h2>➕ إضافة طالب جديد</h2>
+        <div class="form-row">
+          <div class="form-group"><label>اسم الطالب *</label><input type="text" id="studentName"></div>
+          <div class="form-group"><label>الصف الدراسي *</label>
+            <select id="studentGrade">
+              <option value="">-- اختر --</option>
+              <option>الأول الابتدائي</option><option>الثاني الابتدائي</option>
+              <option>الثالث الابتدائي</option><option>الرابع الابتدائي</option>
+              <option>الخامس الابتدائي</option><option>السادس الابتدائي</option>
+              <option>الأول المتوسط</option><option>الثاني المتوسط</option>
+              <option>الثالث المتوسط</option><option>الأول الثانوي</option>
+              <option>الثاني الثانوي</option><option>الثالث الثانوي</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>رقم القاعة *</label><input type="text" id="studentRoom" placeholder="مثال: 101"></div>
+          <div class="form-group"><label>اسم ولي الأمر *</label><input type="text" id="parentName"></div>
+        </div>
+        <div class="form-group"><label>رقم الجوال</label><input type="text" id="parentPhone"></div>
+        <button class="btn btn-primary" onclick="addStudent()">💾 حفظ الطالب</button>
+      </div>
+    </div>
+    <div id="students-excel" class="sub-page" style="display:none">
+      <div class="card">
+        <h2>📥 استيراد الطلاب من ملف Excel</h2>
+        <div class="alert alert-info"><strong>الأعمدة المطلوبة:</strong> الاسم | الصف | رقم القاعة | ولي الأمر | الجوال</div>
+        <button class="btn btn-info" onclick="downloadTemplate('students')">📄 تنزيل قالب Excel</button>
+        <div class="upload-zone" style="margin-top:15px" onclick="document.getElementById('studentsFile').click()">
+          <div class="icon">📁</div>
+          <p><strong>اضغط لاختيار ملف Excel</strong></p>
+          <input type="file" id="studentsFile" accept=".xlsx,.xls" style="display:none" onchange="importExcel('students',this)">
+        </div>
+        <div id="studentsImportResult"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>
+        <span>📋 قائمة الطلاب (<span id="studentsCount">0</span>)</span>
+        <button class="btn btn-danger-lg" onclick="deleteAllStudents()">🗑️ حذف جميع الطلاب</button>
+      </h2>
+      <div id="studentsList"></div>
+    </div>
+  </div>
+
+  <div id="teachers" class="page">
+    <div class="tabs-sub">
+      <button class="active" onclick="showSubTab('teachers','manual',this)">✍️ إضافة يدوية</button>
+      <button onclick="showSubTab('teachers','excel',this)">📥 استيراد Excel</button>
+    </div>
+    <div id="teachers-manual" class="sub-page">
+      <div class="card">
+        <h2>➕ إضافة معلم جديد</h2>
+        <div class="form-row">
+          <div class="form-group"><label>اسم المعلم *</label><input type="text" id="teacherName"></div>
+          <div class="form-group"><label>المادة *</label><input type="text" id="teacherSpec" placeholder="مثال: رياضيات، علوم، لغة عربية"></div>
+        </div>
+        <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="teacherEmail"></div>
+        <button class="btn btn-primary" onclick="addTeacher()">💾 حفظ المعلم</button>
+      </div>
+    </div>
+    <div id="teachers-excel" class="sub-page" style="display:none">
+      <div class="card">
+        <h2>📥 استيراد المعلمين من ملف Excel</h2>
+        <div class="alert alert-info"><strong>الأعمدة المطلوبة:</strong> الاسم | المادة | البريد</div>
+        <button class="btn btn-info" onclick="downloadTemplate('teachers')">📄 تنزيل قالب Excel</button>
+        <div class="upload-zone" style="margin-top:15px" onclick="document.getElementById('teachersFile').click()">
+          <div class="icon">📁</div>
+          <p><strong>اضغط لاختيار ملف Excel</strong></p>
+          <input type="file" id="teachersFile" accept=".xlsx,.xls" style="display:none" onchange="importExcel('teachers',this)">
+        </div>
+        <div id="teachersImportResult"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>
+        <span>📋 قائمة المعلمين (<span id="teachersCount">0</span>)</span>
+        <button class="btn btn-danger-lg" onclick="deleteAllTeachers()">🗑️ حذف جميع المعلمين</button>
+      </h2>
+      <div id="teachersList"></div>
+    </div>
+  </div>
+
+  <div id="questions" class="page">
+    <div class="card">
+      <h2>➕ إضافة سؤال جديد</h2>
+      <div class="alert alert-info">
+        💡 <strong>ملاحظة:</strong> اكتب الخيارات مفصولة بفاصلة. أول خيار = أعلى درجة، آخر خيار = أقل درجة.<br>
+        ⚠️ الأسئلة <strong>السلوكية</strong> هي الوحيدة التي يقيّمها وكيل شؤون الطلاب والموجه الطلابي.
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>نص السؤال *</label><input type="text" id="qText"></div>
+        <div class="form-group"><label>المحور *</label>
+          <select id="qCategory">
+            <option value="academic">📚 المحور الدراسي (المعلم فقط)</option>
+            <option value="behavioral">🤝 المحور السلوكي (الجميع)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>خيارات الإجابة * (مفصولة بفاصلة)</label>
+        <input type="text" id="qOptions" placeholder="مثال: دائماً، غالباً، أحياناً، نادراً، أبداً">
+      </div>
+      <button class="btn btn-primary" onclick="addQuestion()">💾 حفظ السؤال</button>
+    </div>
+    <div class="card">
+      <h2>📚 الأسئلة الدراسية <small style="color:#6c757d;font-weight:400">(يقيّمها المعلم فقط)</small></h2>
+      <div id="academicQuestions"></div>
+    </div>
+    <div class="card">
+      <h2>🤝 الأسئلة السلوكية <small style="color:#6c757d;font-weight:400">(يقيّمها المعلم + الوكيل + الموجه)</small></h2>
+      <div id="behavioralQuestions"></div>
+    </div>
+  </div>
+
+  <div id="newInquiry" class="page">
+    <div class="card">
+      <h2>➕ إنشاء استفسار جديد</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>اختر الطالب *</label>
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="studentSearch" placeholder="ابحث بالاسم أو الصف أو القاعة..." oninput="filterStudentSelect()">
+          </div>
+          <select id="inqStudent" size="6" style="height:auto;max-height:200px"></select>
+          <div class="search-results-count" id="studentSearchCount"></div>
+        </div>
+        <div class="form-group"><label>عنوان الاستفسار *</label><input type="text" id="inqTitle" placeholder="مثال: تقرير الفصل الأول"></div>
+      </div>
+      <div class="form-group">
+        <label>تفاصيل الاستفسار (اختياري)</label>
+        <textarea id="inqDetails" placeholder="أي ملاحظات إضافية..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>اختر المعلمين المعنيين مع موادهم *</label>
+        <div class="checklist" id="teachersChecklist"></div>
+      </div>
+      <button class="btn btn-success" onclick="createInquiry()">🔗 إنشاء الاستفسار وتوليد الرابط</button>
+      <div id="generatedLink"></div>
+    </div>
+  </div>
+
+  <div id="inquiries" class="page">
+    <div class="card">
+      <h2>📋 جميع الاستفسارات</h2>
+      <div id="inquiriesList"></div>
+    </div>
+  </div>
+
+  <div id="summary" class="page">
+    <div class="card">
+      <h2>📊 عرض ملخص استفسار</h2>
+      <div class="form-group">
+        <label>اختر الاستفسار لعرض ملخصه</label>
+        <select id="summarySelect" onchange="renderSummary()"></select>
+      </div>
+      <div id="summaryContent"></div>
+    </div>
+  </div>
+</div>
+
+<div id="evaluationPanel" style="display:none"></div>
+
+<script>
+let data=JSON.parse(localStorage.getItem('parentInquiryV5')||'{}');
+if(!data.students) data.students=[];
+if(!data.teachers) data.teachers=[];
+if(!data.questions) data.questions=getDefaultQuestions();
+if(!data.inquiries) data.inquiries=[];
+function save(){localStorage.setItem('parentInquiryV5',JSON.stringify(data));}
+
+function getDefaultQuestions(){
+  return[
+    {id:1,text:'مستوى تحصيل الطالب في المادة',category:'academic',options:['ممتاز','جيد جداً','جيد','مقبول','ضعيف']},
+    {id:2,text:'التزام الطالب بأداء الواجبات والأنشطة',category:'academic',options:['دائماً','غالباً','أحياناً','نادراً','أبداً']},
+    {id:3,text:'مشاركة الطالب الفعالة في الفصل',category:'academic',options:['ممتازة','جيدة جداً','جيدة','مقبولة','ضعيفة']},
+    {id:4,text:'استيعاب الطالب للمفاهيم والمهارات',category:'academic',options:['كامل','جيد جداً','جيد','جزئي','ضعيف']},
+    {id:5,text:'أداء الطالب في الاختبارات',category:'academic',options:['ممتاز','جيد جداً','جيد','مقبول','ضعيف']},
+    {id:6,text:'التزام الطالب بأنظمة المدرسة',category:'behavioral',options:['ملتزم تماماً','ملتزم غالباً','أحياناً','غير ملتزم أحياناً','غير ملتزم']},
+    {id:7,text:'تعامل الطالب مع المعلمين والزملاء',category:'behavioral',options:['ممتاز','جيد جداً','جيد','مقبول','ضعيف']},
+    {id:8,text:'مواظبة الطالب على الحضور',category:'behavioral',options:['دائماً','غالباً','أحياناً','نادراً','أبداً']},
+    {id:9,text:'المظهر العام والنظافة الشخصية',category:'behavioral',options:['ممتاز','جيد جداً','جيد','مقبول','ضعيف']},
+    {id:10,text:'السلوك العام والانضباط',category:'behavioral',options:['ممتاز','جيد جداً','جيد','مقبول','ضعيف']}
+  ];
+}
+
+function showPage(id,btn){
+  document.querySelectorAll('#adminPanel .page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('#adminPanel .nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  refreshAll();
+}
+function showSubTab(parent,tab,btn){
+  document.getElementById(parent).querySelectorAll('.sub-page').forEach(p=>p.style.display='none');
+  document.getElementById(parent+'-'+tab).style.display='block';
+  btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function downloadTemplate(type){
+  const wb=XLSX.utils.book_new();
+  let h,s;
+  if(type==='students'){h=['الاسم','الصف','رقم القاعة','ولي الأمر','الجوال'];s=[['أحمد محمد','الأول المتوسط','101','محمد أحمد','0501234567']];}
+  else{h=['الاسم','المادة','البريد'];s=[['خالد العلي','رياضيات','k@school.com']];}
+  const ws=XLSX.utils.aoa_to_sheet([h,...s]);
+  XLSX.utils.book_append_sheet(wb,ws,'القالب');
+  XLSX.writeFile(wb,`قالب_${type}.xlsx`);
+}
+function importExcel(type,input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
+      if(rows.length<2){alert('الملف فارغ!');return;}
+      let c=0;
+      for(let i=1;i<rows.length;i++){
+        const r=rows[i];if(!r||!r[0])continue;
+        if(type==='students') data.students.push({id:Date.now()+i,name:r[0]||'',grade:r[1]||'',room:r[2]||'',parent:r[3]||'',phone:r[4]||''});
+        else data.teachers.push({id:Date.now()+i,name:r[0]||'',spec:r[1]||'',email:r[2]||''});
+        c++;
+      }
+      save();
+      document.getElementById(type+'ImportResult').innerHTML=`<div class="alert alert-success">✅ تم استيراد ${c} سجل</div>`;
+      refreshAll();
+    }catch(err){alert('خطأ: '+err.message);}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function addStudent(){
+  const n=document.getElementById('studentName').value.trim(),g=document.getElementById('studentGrade').value,
+        r=document.getElementById('studentRoom').value.trim(),p=document.getElementById('parentName').value.trim(),
+        ph=document.getElementById('parentPhone').value.trim();
+  if(!n||!g||!r||!p){alert('يرجى تعبئة الحقول المطلوبة');return;}
+  data.students.push({id:Date.now(),name:n,grade:g,room:r,parent:p,phone:ph});
+  save();
+  ['studentName','studentGrade','studentRoom','parentName','parentPhone'].forEach(i=>document.getElementById(i).value='');
+  refreshAll();alert('✅ تم حفظ الطالب');
+}
+function deleteStudent(id){if(!confirm('حذف الطالب؟'))return;data.students=data.students.filter(s=>s.id!==id);save();refreshAll();}
+function deleteAllStudents(){
+  if(!data.students.length){alert('لا يوجد طلاب');return;}
+  if(!confirm(`⚠️ حذف جميع الطلاب (${data.students.length})؟`))return;
+  if(!confirm('تأكيد نهائي!'))return;
+  data.students=[];save();refreshAll();alert('✅ تم حذف جميع الطلاب');
+}
+function renderStudents(){
+  document.getElementById('studentsCount').textContent=data.students.length;
+  const el=document.getElementById('studentsList');
+  if(!data.students.length){el.innerHTML='<p style="color:#6c757d">لا يوجد طلاب</p>';return;}
+  let h='<table><thead><tr><th>الاسم</th><th>الصف</th><th>القاعة</th><th>ولي الأمر</th><th>الجوال</th><th>إجراء</th></tr></thead><tbody>';
+  data.students.forEach(s=>{
+    h+=`<tr><td>${s.name}</td><td>${s.grade}</td><td><strong>${s.room}</strong></td><td>${s.parent}</td><td>${s.phone||'-'}</td><td><button class="btn btn-danger" onclick="deleteStudent(${s.id})">🗑</button></td></tr>`;
+  });
+  el.innerHTML=h+'</tbody></table>';
+}
+
+function addTeacher(){
+  const n=document.getElementById('teacherName').value.trim(),s=document.getElementById('teacherSpec').value.trim(),e=document.getElementById('teacherEmail').value.trim();
+  if(!n||!s){alert('يرجى تعبئة الحقول');return;}
+  data.teachers.push({id:Date.now(),name:n,spec:s,email:e});save();
+  ['teacherName','teacherSpec','teacherEmail'].forEach(i=>document.getElementById(i).value='');
+  refreshAll();alert('✅ تم حفظ المعلم');
+}
+function deleteTeacher(id){if(!confirm('حذف المعلم؟'))return;data.teachers=data.teachers.filter(t=>t.id!==id);save();refreshAll();}
+function deleteAllTeachers(){
+  if(!data.teachers.length){alert('لا يوجد معلمون');return;}
+  if(!confirm(`⚠️ حذف جميع المعلمين (${data.teachers.length})؟`))return;
+  if(!confirm('تأكيد نهائي!'))return;
+  data.teachers=[];save();refreshAll();alert('✅ تم حذف جميع المعلمين');
+}
+function renderTeachers(){
+  document.getElementById('teachersCount').textContent=data.teachers.length;
+  const el=document.getElementById('teachersList');
+  if(!data.teachers.length){el.innerHTML='<p style="color:#6c757d">لا يوجد معلمون</p>';return;}
+  let h='<table><thead><tr><th>الاسم</th><th>المادة</th><th>البريد</th><th>إجراء</th></tr></thead><tbody>';
+  data.teachers.forEach(t=>{h+=`<tr><td>${t.name}</td><td><strong>${t.spec}</strong></td><td>${t.email||'-'}</td><td><button class="btn btn-danger" onclick="deleteTeacher(${t.id})">🗑</button></td></tr>`;});
+  el.innerHTML=h+'</tbody></table>';
+}
+
+function addQuestion(){
+  const t=document.getElementById('qText').value.trim(),c=document.getElementById('qCategory').value,o=document.getElementById('qOptions').value.trim();
+  if(!t){alert('أدخل نص السؤال');return;}
+  if(!o){alert('أدخل خيارات الإجابة');return;}
+  const opts=o.split(/[,،;]/).map(x=>x.trim()).filter(x=>x);
+  if(opts.length<2){alert('خياران على الأقل');return;}
+  data.questions.push({id:Date.now(),text:t,category:c,options:opts});save();
+  document.getElementById('qText').value='';document.getElementById('qOptions').value='';
+  refreshAll();alert('✅ تم حفظ السؤال');
+}
+function deleteQuestion(id){if(!confirm('حذف السؤال؟'))return;data.questions=data.questions.filter(q=>q.id!==id);save();refreshAll();}
+function renderQuestions(){
+  ['academic','behavioral'].forEach(cat=>{
+    const qs=data.questions.filter(q=>q.category===cat);
+    const elId=cat==='academic'?'academicQuestions':'behavioralQuestions';
+    const cls=cat==='behavioral'?' behavioral':'';
+    document.getElementById(elId).innerHTML=qs.length?qs.map(q=>`
+      <div class="question-card${cls}">
+        <div style="display:flex;justify-content:space-between;align-items:start;gap:10px">
+          <div style="flex:1">
+            <div class="q-text">${cat==='academic'?'📚':'🤝'} ${q.text}</div>
+            <div class="q-options">${q.options.map((o,i)=>`<span class="q-option">${i+1}. ${o}</span>`).join('')}</div>
+          </div>
+          <button class="btn btn-danger" onclick="deleteQuestion(${q.id})">🗑</button>
+        </div>
+      </div>`).join(''):'<p style="color:#6c757d">لا توجد أسئلة</p>';
+  });
+}
+
+function filterStudentSelect(){
+  const search=document.getElementById('studentSearch').value.trim().toLowerCase();
+  const sel=document.getElementById('inqStudent');
+  const curVal=sel.value;
+  sel.innerHTML='<option value="">-- اختر طالب --</option>';
+  let count=0;
+  data.students.forEach(s=>{
+    const text=`${s.name} - ${s.grade} - قاعة ${s.room}`;
+    if(!search||text.toLowerCase().includes(search)){
+      sel.innerHTML+=`<option value="${s.id}">${text}</option>`;
+      count++;
+    }
+  });
+  sel.value=curVal;
+  document.getElementById('studentSearchCount').textContent=search?`🔍 تم العثور على ${count} طالب`:'';
+}
+
+function fillSelects(){
+  const sel=document.getElementById('inqStudent');
+  sel.innerHTML='<option value="">-- اختر طالب --</option>'+
+    data.students.map(x=>`<option value="${x.id}">${x.name} - ${x.grade} - قاعة ${x.room}</option>`).join('');
+  document.getElementById('studentSearch').value='';
+  document.getElementById('studentSearchCount').textContent='';
+
+  document.getElementById('teachersChecklist').innerHTML=data.teachers.length?
+    data.teachers.map(t=>`<div class="checklist-item"><input type="checkbox" id="tc_${t.id}" value="${t.id}"><label for="tc_${t.id}" style="cursor:pointer;flex:1"><strong>${t.name}</strong> - <span style="color:#2a5298;font-weight:600">${t.spec}</span></label></div>`).join('')
+    :'<p style="color:#6c757d;padding:10px">لا يوجد معلمون</p>';
+
+  document.getElementById('summarySelect').innerHTML='<option value="">-- اختر --</option>'+
+    data.inquiries.slice().reverse().map(i=>{const st=data.students.find(s=>s.id===i.studentId);return `<option value="${i.id}">${st?st.name:'?'} - ${i.title}</option>`;}).join('');
+}
+
+function createInquiry(){
+  const sid=document.getElementById('inqStudent').value,title=document.getElementById('inqTitle').value.trim(),
+        details=document.getElementById('inqDetails').value.trim(),
+        checked=Array.from(document.querySelectorAll('#teachersChecklist input:checked')).map(i=>+i.value);
+  if(!sid||!title){alert('اختر الطالب والعنوان');return;}
+  if(!checked.length){alert('اختر معلماً واحداً على الأقل');return;}
+  const token='inq_'+Date.now()+'_'+Math.random().toString(36).substr(2,9);
+  data.inquiries.push({
+    id:Date.now(),token,studentId:+sid,teacherIds:checked,title,details,
+    questions:data.questions.map(q=>q.id),
+    teacherResponses:{},counselorResponse:null,guideResponse:null,
+    createdAt:new Date().toISOString()
+  });
+  save();
+  const baseUrl=window.location.href.split('?')[0],link=baseUrl+'?token='+token;
+  const tNames=checked.map(id=>{const t=data.teachers.find(x=>x.id===id);return t?`${t.name} (${t.spec})`:'';}).join('، ');
+  document.getElementById('generatedLink').innerHTML=`
+    <div class="alert alert-success">✅ تم إنشاء الاستفسار بنجاح!</div>
+    <div class="alert alert-info"><strong>المعلمون:</strong> ${tNames}</div>
+    <div class="link-box">
+      <strong>🔗 رابط التقييم الموحد:</strong><br>
+      <a href="${link}" target="_blank">${link}</a><br><br>
+      <button class="btn btn-info" onclick="navigator.clipboard.writeText('${link}').then(()=>alert('تم النسخ!'))">📋 نسخ</button>
+      <button class="btn btn-primary" onclick="window.open('${link}','_blank')">🚀 فتح</button>
+    </div>
+    <div class="alert alert-warning">⚠️ المعلم يقيّم الدراسي+السلوكي | الوكيل والموجه يقيّمان السلوكي فقط</div>`;
+  ['inqTitle','inqDetails'].forEach(i=>document.getElementById(i).value='');
+  document.querySelectorAll('#teachersChecklist input').forEach(i=>i.checked=false);
+  refreshAll();
+}
+
+function renderInquiries(){
+  const el=document.getElementById('inquiriesList');
+  if(!data.inquiries.length){el.innerHTML='<p style="color:#6c757d">لا توجد استفسارات</p>';return;}
+  let h='<table><thead><tr><th>الطالب</th><th>القاعة</th><th>العنوان</th><th>المعلمون</th><th>التقدم</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody>';
+  data.inquiries.slice().reverse().forEach(inq=>{
+    const st=data.students.find(s=>s.id===inq.studentId);
+    const tN=inq.teacherIds.map(id=>{const t=data.teachers.find(x=>x.id===id);return t?`${t.name} (${t.spec})`:'';}).join('، ');
+    const total=inq.teacherIds.length+2,done=Object.keys(inq.teacherResponses).length+(inq.counselorResponse?1:0)+(inq.guideResponse?1:0);
+    const pct=Math.round(done/total*100);
+    let status='<span class="badge badge-pending">⏳ قيد التنفيذ</span>';
+    if(done===total) status='<span class="badge badge-done">✅ مكتمل</span>';
+    else if(done>0) status=`<span class="badge badge-partial">🔄 ${done}/${total}</span>`;
+    const link=window.location.href.split('?')[0]+'?token='+inq.token;
+    h+=`<tr><td>${st?st.name:'-'}</td><td><strong>${st?st.room:'-'}</strong></td><td>${inq.title}</td><td style="font-size:12px">${tN}</td>
+      <td style="min-width:120px"><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div><small>${pct}%</small></td>
+      <td>${status}</td><td>
+        <button class="btn btn-info btn-sm" onclick="navigator.clipboard.writeText('${link}').then(()=>alert('تم النسخ!'))">📋</button>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('summarySelect').value='${inq.id}';showPage('summary',document.querySelectorAll('.nav button')[6]);renderSummary()">📊</button>
+        <button class="btn btn-danger" onclick="deleteInquiry(${inq.id})">🗑</button>
+      </td></tr>`;
+  });
+  el.innerHTML=h+'</tbody></table>';
+}
+function deleteInquiry(id){if(!confirm('حذف؟'))return;data.inquiries=data.inquiries.filter(i=>i.id!==id);save();refreshAll();}
+
+function checkToken(){
+  const token=new URLSearchParams(window.location.search).get('token');
+  if(!token)return false;
+  const inq=data.inquiries.find(i=>i.token===token);
+  if(!inq){document.body.innerHTML='<div style="padding:50px;text-align:center;color:#fff"><h1>❌ رابط غير صحيح</h1></div>';return true;}
+  document.getElementById('adminPanel').style.display='none';
+  document.getElementById('evaluationPanel').style.display='block';
+  renderEvalLanding(inq);
+  return true;
+}
+
+function renderEvalLanding(inq){
+  const st=data.students.find(s=>s.id===inq.studentId);
+  const total=inq.teacherIds.length+2,done=Object.keys(inq.teacherResponses).length+(inq.counselorResponse?1:0)+(inq.guideResponse?1:0);
+  const allDone=done===total;
+  let h=`<div class="container"><div class="header"><h1>📝 نموذج تقييم الطالب</h1><p>${inq.title}</p></div>
+    <div style="padding:30px">
+      <div class="card"><h2>📌 معلومات الاستفسار</h2>
+        <p><strong>الطالب:</strong> ${st?st.name:'-'} | <strong>الصف:</strong> ${st?st.grade:''} | <strong>القاعة:</strong> ${st?st.room:''}</p>
+        <p><strong>ولي الأمر:</strong> ${st?st.parent:'-'}</p>
+        <p><strong>التقدم:</strong> ${done}/${total} (${Math.round(done/total*100)}%)</p>
+        <div class="progress-bar"><div class="progress-fill" style="width:${done/total*100}%"></div></div>
+      </div>
+      <div class="card"><h2>👤 اختر دورك</h2>
+        <div class="role-selector">
+          <div class="role-card" onclick="selectRole('teacher','${inq.token}')">
+            <div class="icon">👨‍🏫</div><div class="title">معلم</div>
+            <div class="scope scope-all">📚 دراسي + 🤝 سلوكي</div>
+          </div>
+          <div class="role-card" onclick="selectRole('counselor','${inq.token}')">
+            <div class="icon">👔</div><div class="title">وكيل شؤون الطلاب</div>
+            <div class="scope scope-beh">🤝 سلوكي فقط</div>
+          </div>
+          <div class="role-card" onclick="selectRole('guide','${inq.token}')">
+            <div class="icon">🧭</div><div class="title">الموجه الطلابي</div>
+            <div class="scope scope-beh">🤝 سلوكي فقط</div>
+          </div>
+          ${allDone?`<div class="role-card" onclick="viewFinalSummary('${inq.token}')" style="border-color:#28a745">
+            <div class="icon">📊</div><div class="title" style="color:#28a745">الملخص النهائي</div>
+            <small style="color:#28a745">تقييم كل مادة + الإجمالي</small>
+          </div>`:''}
+        </div>
+      </div>
+    </div></div>`;
+  document.getElementById('evaluationPanel').innerHTML=h;
+}
+
+function selectRole(role,token){
+  const inq=data.inquiries.find(i=>i.token===token);
+  if(role==='teacher'){
+    const avail=inq.teacherIds.filter(id=>!inq.teacherResponses[id]);
+    if(!avail.length){alert('✅ جميع المعلمين قيّموا');renderEvalLanding(inq);return;}
+    document.getElementById('evaluationPanel').innerHTML=`<div class="container"><div class="header"><h1>👨‍🏫 اختر اسمك</h1></div>
+      <div style="padding:30px"><div class="card"><h2>اختر اسمك</h2>
+        <div class="form-group"><select id="selectedTeacher"><option value="">-- اختر --</option>
+          ${avail.map(id=>{const t=data.teachers.find(x=>x.id===id);return `<option value="${id}">${t.name} - ${t.spec}</option>`;}).join('')}
+        </select></div>
+        <button class="btn btn-primary" onclick="startTeacherEval('${token}')">متابعة</button>
+        <button class="btn btn-secondary" onclick="renderEvalLanding(data.inquiries.find(i=>i.token==='${token}'))">رجوع</button>
+      </div></div></div>`;
+  }else if(role==='counselor'){
+    if(inq.counselorResponse){alert('✅ تم التقييم مسبقاً');renderEvalLanding(inq);return;}
+    startRoleEval(token,'counselor','وكيل شؤون الطلاب');
+  }else{
+    if(inq.guideResponse){alert('✅ تم التقييم مسبقاً');renderEvalLanding(inq);return;}
+    startRoleEval(token,'guide','الموجه الطلابي');
+  }
+}
+
+function startTeacherEval(token){
+  const tid=+document.getElementById('selectedTeacher').value;
+  if(!tid){alert('اختر اسمك');return;}
+  startRoleEval(token,'teacher',null,tid);
+}
+
+function startRoleEval(token,role,roleName,teacherId=null){
+  const inq=data.inquiries.find(i=>i.token===token);
+  const st=data.students.find(s=>s.id===inq.studentId);
+  const questions=data.questions.filter(q=>inq.questions.includes(q.id));
+  const isBehavioralOnly=(role==='counselor'||role==='guide');
+  const acadQ=isBehavioralOnly?[]:questions.filter(q=>q.category==='academic');
+  const behQ=questions.filter(q=>q.category==='behavioral');
+  const title=role==='teacher'?(data.teachers.find(t=>t.id===teacherId)?.name||'المعلم'):roleName;
+
+  function renderQ(q){
+    const cls=q.category==='behavioral'?' behavioral':'';
+    return `<div class="question-card${cls}">
+      <div class="q-text">${q.text}</div>
+      <div class="rating-options">
+        ${q.options.map((opt,idx)=>`<label><input type="radio" name="q_${q.id}" value="${q.options.length-idx}"><span>${opt}</span></label>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  let h=`<div class="container"><div class="header"><h1>📝 نموذج التقييم</h1>
+    <p>${title} | الطالب: ${st.name} | القاعة: ${st.room}</p></div>
+    <div style="padding:30px">
+      <div class="card"><h2>📌 تعليمات</h2>
+        ${isBehavioralOnly
+          ?'<div class="eval-scope-badge eval-scope-beh">🤝 تقييم المحور السلوكي فقط</div><p>يرجى تقييم الجوانب السلوكية للطالب.</p>'
+          :'<div class="eval-scope-badge eval-scope-all">📚🤝 تقييم المحور الدراسي والسلوكي</div><p>يرجى تقييم الجوانب الدراسية والسلوكية للطالب.</p>'}
+      </div>
+      ${acadQ.length?`<div class="card"><h2>📚 المحور الدراسي</h2>${acadQ.map(q=>renderQ(q)).join('')}</div>`:''}
+      ${behQ.length?`<div class="card"><h2>🤝 المحور السلوكي</h2>${behQ.map(q=>renderQ(q)).join('')}</div>`:''}
+      <div class="card"><h2>💬 ملاحظات عامة</h2>
+        <div class="form-group"><label>نقاط القوة</label><textarea id="strengths" placeholder="نقاط القوة..."></textarea></div>
+        <div class="form-group"><label>نقاط تحتاج تطوير</label><textarea id="weaknesses" placeholder="نقاط التطوير..."></textarea></div>
+        <div class="form-group"><label>التوصيات</label><textarea id="recommendations" placeholder="التوصيات..."></textarea></div>
+      </div>
+      <button class="btn btn-success" onclick="submitEval('${token}','${role}',${teacherId||'null'})">📤 إرسال التقييم</button>
+      <button class="btn btn-secondary" onclick="renderEvalLanding(data.inquiries.find(i=>i.token==='${token}'))">رجوع</button>
+    </div></div>`;
+  document.getElementById('evaluationPanel').innerHTML=h;
+}
+
+function submitEval(token,role,teacherId){
+  const inq=data.inquiries.find(i=>i.token===token);
+  const displayedQIds=[];
+  document.querySelectorAll('.question-card input[type="radio"]').forEach(r=>{
+    const qid=+r.name.replace('q_','');
+    if(!displayedQIds.includes(qid))displayedQIds.push(qid);
+  });
+  const answers={};let allOk=true;
+  displayedQIds.forEach(qid=>{
+    const sel=document.querySelector(`input[name="q_${qid}"]:checked`);
+    if(sel)answers[qid]=+sel.value;else allOk=false;
+  });
+  if(!allOk){alert('يرجى الإجابة على جميع الأسئلة المعروضة');return;}
+  const resp={answers,strengths:document.getElementById('strengths').value.trim(),
+    weaknesses:document.getElementById('weaknesses').value.trim(),
+    recommendations:document.getElementById('recommendations').value.trim(),
+    date:new Date().toISOString()};
+  if(role==='teacher')inq.teacherResponses[teacherId]=resp;
+  else if(role==='counselor')inq.counselorResponse=resp;
+  else inq.guideResponse=resp;
+  save();alert('✅ تم حفظ التقييم');renderEvalLanding(inq);
+}
+
+function viewFinalSummary(token){
+  document.getElementById('evaluationPanel').innerHTML=buildSummaryHTML(data.inquiries.find(i=>i.token===token));
+}
+function renderSummary(){
+  const id=+document.getElementById('summarySelect').value;
+  document.getElementById('summaryContent').innerHTML=id?buildSummaryHTML(data.inquiries.find(i=>i.id===id)):'';
+}
+
+function buildSummaryHTML(inq){
+  const st=data.students.find(s=>s.id===inq.studentId);
+  const questions=data.questions.filter(q=>inq.questions.includes(q.id));
+  const acadQ=questions.filter(q=>q.category==='academic');
+  const behQ=questions.filter(q=>q.category==='behavioral');
+
+  const teacherResps=Object.entries(inq.teacherResponses);
+  const allResps=[...teacherResps.map(([id,r])=>r)];
+  if(inq.counselorResponse)allResps.push(inq.counselorResponse);
+  if(inq.guideResponse)allResps.push(inq.guideResponse);
+  if(!allResps.length)return '<div class="alert alert-warning">⏳ لم يكتمل التقييم بعد</div>';
+
+  function avgQ(q,resps){
+    const max=q.options.length;
+    const vals=resps.map(r=>r.answers[q.id]).filter(v=>v!==undefined);
+    if(!vals.length)return{avg:0,pct:0,label:'-'};
+    const avg=vals.reduce((a,b)=>a+b,0)/vals.length;
+    const pct=avg/max*100;
+    const idx=Math.max(0,Math.min(q.options.length-1,Math.round(max-avg)));
+    return{avg,pct,label:q.options[idx]};
+  }
+  function catAvg(qs,resps){
+    if(!qs.length)return 0;
+    return qs.map(q=>avgQ(q,resps).pct).reduce((a,b)=>a+b,0)/qs.length;
+  }
+  function lvl(p){
+    if(p>=90)return{l:'ممتاز',c:'#28a745'};
+    if(p>=75)return{l:'جيد جداً',c:'#20c997'};
+    if(p>=60)return{l:'جيد',c:'#17a2b8'};
+    if(p>=45)return{l:'مقبول',c:'#ffc107'};
+    return{l:'ضعيف',c:'#dc3545'};
+  }
+
+  // التقييم الإجمالي
+  const acadPct=catAvg(acadQ,allResps),behPct=catAvg(behQ,allResps),totalPct=(acadPct+behPct)/2,tLvl=lvl(totalPct);
+
+  // تقييم كل مادة على حدة
+  let subjectsHTML='';
+  teacherResps.forEach(([tid,resp])=>{
+    const teacher=data.teachers.find(t=>t.id===+tid);
+    if(!teacher)return;
+    const subject=teacher.spec;
+    const acadPctSubj=catAvg(acadQ,[resp]);
+    const behPctSubj=catAvg(behQ,[resp]);
+    const totalPctSubj=(acadPctSubj+behPctSubj)/2;
+    const lvlSubj=lvl(totalPctSubj);
+
+    subjectsHTML+=`
+      <div class="subject-card">
+        <h3>📚 ${subject}</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin-bottom:15px">
+          <div style="text-align:center">
+            <div class="score-circle" style="background:${lvl(acadPctSubj).c}">${Math.round(acadPctSubj)}%</div>
+            <p style="margin-top:8px"><strong>المحور الدراسي</strong></p>
+            <small style="color:${lvl(acadPctSubj).c};font-weight:600">${lvl(acadPctSubj).l}</small>
+          </div>
+          <div style="text-align:center">
+            <div class="score-circle" style="background:${lvl(behPctSubj).c}">${Math.round(behPctSubj)}%</div>
+            <p style="margin-top:8px"><strong>المحور السلوكي</strong></p>
+            <small style="color:${lvl(behPctSubj).c};font-weight:600">${lvl(behPctSubj).l}</small>
+          </div>
+          <div style="text-align:center">
+            <div class="score-circle" style="background:${lvlSubj.c};width:90px;height:90px;line-height:90px;font-size:1.5em">${Math.round(totalPctSubj)}%</div>
+            <p style="margin-top:8px"><strong>التقييم العام</strong></p>
+            <span class="subject-score" style="background:${lvlSubj.c};color:#fff;margin-top:5px">${lvlSubj.l}</span>
+          </div>
+        </div>
+        ${acadQ.length?`<details style="margin-top:10px"><summary style="cursor:pointer;font-weight:600;color:#2a5298">📋 تفاصيل المحور الدراسي</summary>
+          <table style="margin-top:10px"><thead><tr><th>المعيار</th><th>النسبة</th><th>الإجابة</th><th>المستوى</th></tr></thead><tbody>
+          ${acadQ.map(q=>{const s=avgQ(q,[resp]),l=lvl(s.pct);return`<tr><td>${q.text}</td><td><strong>${Math.round(s.pct)}%</strong></td><td>${s.label}</td><td><span style="color:${l.c};font-weight:600">${l.l}</span></td></tr>`;}).join('')}
+          </tbody></table></details>`:''}
+        ${behQ.length?`<details style="margin-top:10px"><summary style="cursor:pointer;font-weight:600;color:#e67e22">📋 تفاصيل المحور السلوكي</summary>
+          <table style="margin-top:10px"><thead><tr><th>المعيار</th><th>النسبة</th><th>الإجابة</th><th>المستوى</th></tr></thead><tbody>
+          ${behQ.map(q=>{const s=avgQ(q,[resp]),l=lvl(s.pct);return`<tr><td>${q.text}</td><td><strong>${Math.round(s.pct)}%</strong></td><td>${s.label}</td><td><span style="color:${l.c};font-weight:600">${l.l}</span></td></tr>`;}).join('')}
+          </tbody></table></details>`:''}
+        ${resp.strengths||resp.weaknesses||resp.recommendations?`
+          <div style="margin-top:15px;padding:15px;background:#fff;border-radius:8px">
+            ${resp.strengths?`<p><strong>✅ نقاط القوة:</strong> ${resp.strengths}</p>`:''}
+            ${resp.weaknesses?`<p><strong>⚠️ نقاط التطوير:</strong> ${resp.weaknesses}</p>`:''}
+            ${resp.recommendations?`<p><strong>💡 التوصيات:</strong> ${resp.recommendations}</p>`:''}
+          </div>`:''}
+      </div>`;
+  });
+
+  // تقييم الوكيل والموجه (سلوكي فقط)
+  let staffBehHTML='';
+  if(inq.counselorResponse||inq.guideResponse){
+    const staffResps=[];
+    if(inq.counselorResponse)staffResps.push({role:'وكيل شؤون الطلاب',resp:inq.counselorResponse});
+    if(inq.guideResponse)staffResps.push({role:'الموجه الطلابي',resp:inq.guideResponse});
+
+    staffResps.forEach(({role,resp})=>{
+      const behPctStaff=catAvg(behQ,[resp]);
+      const lvlStaff=lvl(behPctStaff);
+      staffBehHTML+=`
+        <div class="subject-card" style="border-color:#e67e22">
+          <h3 style="color:#e67e22">🤝 ${role}</h3>
+          <div style="text-align:center;margin-bottom:15px">
+            <div class="score-circle" style="background:${lvlStaff.c}">${Math.round(behPctStaff)}%</div>
+            <p style="margin-top:8px"><strong>المحور السلوكي</strong></p>
+            <span class="subject-score" style="background:${lvlStaff.c};color:#fff;margin-top:5px">${lvlStaff.l}</span>
+          </div>
+          ${behQ.length?`<details><summary style="cursor:pointer;font-weight:600;color:#e67e22">📋 تفاصيل التقييم السلوكي</summary>
+            <table style="margin-top:10px"><thead><tr><th>المعيار</th><th>النسبة</th><th>الإجابة</th><th>المستوى</th></tr></thead><tbody>
+            ${behQ.map(q=>{const s=avgQ(q,[resp]),l=lvl(s.pct);return`<tr><td>${q.text}</td><td><strong>${Math.round(s.pct)}%</strong></td><td>${s.label}</td><td><span style="color:${l.c};font-weight:600">${l.l}</span></td></tr>`;}).join('')}
+            </tbody></table></details>`:''}
+          ${resp.strengths||resp.weaknesses||resp.recommendations?`
+            <div style="margin-top:15px;padding:15px;background:#fff;border-radius:8px">
+              ${resp.strengths?`<p><strong>✅ نقاط القوة:</strong> ${resp.strengths}</p>`:''}
+              ${resp.weaknesses?`<p><strong>⚠️ نقاط التطوير:</strong> ${resp.weaknesses}</p>`:''}
+              ${resp.recommendations?`<p><strong>💡 التوصيات:</strong> ${resp.recommendations}</p>`:''}
+            </div>`:''}
+        </div>`;
+    });
+  }
+
+  let h=`
+    <div class="no-print" style="margin-bottom:15px">
+      <button class="btn btn-primary" onclick="window.print()">🖨️ طباعة / PDF</button>
+      <button class="btn btn-success" onclick="exportWord(${inq.id})">📄 Word</button>
+      <button class="btn btn-info" onclick="exportExcel(${inq.id})">📊 Excel</button>
+    </div>
+    <div class="print-only" style="text-align:center;margin-bottom:20px">
+      <h2 style="color:#1e3c72">تقرير تقييم الطالب</h2>
+      <p>التاريخ: ${new Date().toLocaleDateString('ar-EG')}</p>
+    </div>
+    <div class="card"><h2>🎓 بيانات الطالب</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px">
+        <div><strong>الاسم:</strong> ${st.name}</div><div><strong>الصف:</strong> ${st.grade}</div>
+        <div><strong>القاعة:</strong> ${st.room}</div><div><strong>ولي الأمر:</strong> ${st.parent}</div>
+        <div><strong>الجوال:</strong> ${st.phone||'-'}</div>
+      </div>
+    </div>
+
+    <div class="card"><h2>📊 التقييم الإجمالي</h2>
+      <div style="text-align:center;padding:20px">
+        <div class="score-circle" style="background:${tLvl.c};width:120px;height:120px;line-height:120px;font-size:2em">${Math.round(totalPct)}%</div>
+        <h3 style="margin-top:15px;color:${tLvl.c}">${tLvl.l}</h3>
+        <p style="color:#6c757d;margin-top:10px">متوسط تقييم جميع المواد والإداريين</p>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:20px">
+        <div class="summary-section"><h3>📚 المحور الدراسي</h3>
+          <div style="text-align:center">
+            <div class="score-circle" style="background:${lvl(acadPct).c}">${Math.round(acadPct)}%</div>
+            <p style="margin-top:10px"><strong>${lvl(acadPct).l}</strong></p>
+            <small style="color:#6c757d">(تقييم المعلمين فقط)</small>
+          </div>
+        </div>
+        <div class="summary-section"><h3>🤝 المحور السلوكي</h3>
+          <div style="text-align:center">
+            <div class="score-circle" style="background:${lvl(behPct).c}">${Math.round(behPct)}%</div>
+            <p style="margin-top:10px"><strong>${lvl(behPct).l}</strong></p>
+            <small style="color:#6c757d">(تقييم المعلمين + الوكيل + الموجه)</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    ${subjectsHTML?`<div class="card"><h2>📚 تقييم كل مادة على حدة</h2>${subjectsHTML}</div>`:''}
+    ${staffBehHTML?`<div class="card"><h2>🤝 تقييم الإدارة (السلوكي فقط)</h2>${staffBehHTML}</div>`:''}
+
+    <div class="card"><h2>💬 الملاحظات والتوصيات المجمعة</h2>
+      ${aggNotes(allResps,'strengths','✅ نقاط القوة')}
+      ${aggNotes(allResps,'weaknesses','⚠️ نقاط تحتاج تطوير')}
+      ${aggNotes(allResps,'recommendations','💡 التوصيات')}
+    </div>
+    <div class="card"><h2>📝 تنويه</h2>
+      <p>هذا التقرير نتاج تقييم مجمع من عدة مصادر (معلمو المواد، وكيل شؤون الطلاب، الموجه الطلابي).</p>
+      <p style="margin-top:8px">📌 <strong>المحور الدراسي:</strong> مبني على تقييم المعلمين فقط (لكل مادة).</p>
+      <p>📌 <strong>المحور السلوكي:</strong> مبني على تقييم المعلمين ووكيل شؤون الطلاب والموجه الطلابي.</p>
+      <p style="margin-top:10px;color:#6c757d;font-size:13px">📅 ${new Date().toLocaleString('ar-EG')}</p>
+    </div>`;
+  return h;
+}
+
+function aggNotes(resps,field,title){
+  const notes=resps.map(r=>r[field]).filter(n=>n&&n.trim());
+  if(!notes.length)return'';
+  return`<div class="summary-section"><h3>${title}</h3><ul style="padding-right:20px;line-height:2">${notes.map(n=>`<li>${n}</li>`).join('')}</ul></div>`;
+}
+
+function exportWord(id){
+  const inq=data.inquiries.find(i=>i.id===id);
+  const html=`<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+    <head><meta charset='UTF-8'><style>body{font-family:Tahoma;direction:rtl}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:8px;text-align:right}th{background:#f0f0f0}.subject-card{border:2px solid #2a5298;padding:15px;margin:15px 0;border-radius:8px}</style></head>
+    <body>${buildSummaryHTML(inq)}</body></html>`;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\ufeff',html],{type:'application/msword'}));
+  a.download=`تقرير_${data.students.find(s=>s.id===inq.studentId)?.name||'طالب'}.doc`;a.click();
+}
+function exportExcel(id){
+  const inq=data.inquiries.find(i=>i.id===id),st=data.students.find(s=>s.id===inq.studentId);
+  const questions=data.questions.filter(q=>inq.questions.includes(q.id));
+  const allR=[...Object.values(inq.teacherResponses)];
+  if(inq.counselorResponse)allR.push(inq.counselorResponse);
+  if(inq.guideResponse)allR.push(inq.guideResponse);
+  const rows=[['تقرير تقييم الطالب'],[],['الاسم',st.name],['الصف',st.grade],['القاعة',st.room],['ولي الأمر',st.parent],['التاريخ',new Date().toLocaleDateString('ar-EG')],[],['المادة','المحور','النسبة %','المستوى']];
+  
+  // تقييم كل مادة
+  Object.entries(inq.teacherResponses).forEach(([tid,resp])=>{
+    const teacher=data.teachers.find(t=>t.id===+tid);
+    if(!teacher)return;
+    const acadPct=questions.filter(q=>q.category==='academic').map(q=>{const max=q.options.length;const v=resp.answers[q.id];return v?(v/max*100):0;}).reduce((a,b)=>a+b,0)/(questions.filter(q=>q.category==='academic').length||1);
+    const behPct=questions.filter(q=>q.category==='behavioral').map(q=>{const max=q.options.length;const v=resp.answers[q.id];return v?(v/max*100):0;}).reduce((a,b)=>a+b,0)/(questions.filter(q=>q.category==='behavioral').length||1);
+    const totalPct=(acadPct+behPct)/2;
+    let lv='ضعيف';if(totalPct>=90)lv='ممتاز';else if(totalPct>=75)lv='جيد جداً';else if(totalPct>=60)lv='جيد';else if(totalPct>=45)lv='مقبول';
+    rows.push([teacher.spec,'دراسي',Math.round(acadPct),'']);
+    rows.push([teacher.spec,'سلوكي',Math.round(behPct),'']);
+    rows.push([teacher.spec,'الإجمالي',Math.round(totalPct),lv]);
+  });
+  
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'التقرير');
+  XLSX.writeFile(wb,`تقرير_${st.name}.xlsx`);
+}
+
+function renderStats(){
+  const total=data.inquiries.length;
+  const done=data.inquiries.filter(i=>{const t=i.teacherIds.length+2,d=Object.keys(i.teacherResponses).length+(i.counselorResponse?1:0)+(i.guideResponse?1:0);return d===t;}).length;
+  document.getElementById('statsContainer').innerHTML=`
+    <div class="stat-card"><div class="num">${data.students.length}</div><div class="label">👨‍🎓 الطلاب</div></div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#4facfe,#00f2fe)"><div class="num">${data.teachers.length}</div><div class="label">👨‍🏫 المعلمون</div></div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#43e97b,#38f9d7)"><div class="num">${data.questions.length}</div><div class="label">❓ الأسئلة</div></div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#fa709a,#fee140)"><div class="num">${total}</div><div class="label">📋 الاستفسارات</div></div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#30cfd0,#330867)"><div class="num">${done}</div><div class="label">✅ مكتملة</div></div>`;
+}
+
+function refreshAll(){renderStudents();renderTeachers();renderQuestions();fillSelects();renderInquiries();renderStats();}
+if(!checkToken())refreshAll();
+</script>
+</body>
+</html>
